@@ -1,0 +1,46 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 640px;
+  margin: 40px auto;
+  color: #222;
+}
+
+.hint {
+  color: #555;
+  font-size: 0.9em;
+}
+
+.row {
+  margin: 12px 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+input[type="text"], input:not([type]) {
+  padding: 4px 8px;
+}
+
+button {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+#log {
+  background: #111;
+  color: #0f0;
+  padding: 12px;
+  height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+#path {
+  font-weight: bold;
+}

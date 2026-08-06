@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>In-App Voice Call — PoC</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>In-App Voice Call — PoC</h1>
+    <p class="hint">
+      Open this page in two browser tabs (or two devices), use the <strong>same room ID</strong>,
+      and click Join in both. Voice should connect automatically.
+    </p>
+
+    <div class="row">
+      <label>Room ID <input id="room" value="test-room" /></label>
+      <label>Your name <input id="user" value="userA" /></label>
+    </div>
+
+    <div class="row">
+      <label><input type="checkbox" id="forceRelay" /> Force TURN relay (ignore direct/STUN paths)</label>
+    </div>
+
+    <div class="row">
+      <button id="joinBtn">Join Call</button>
+      <button id="leaveBtn" disabled>Leave</button>
+    </div>
+
+    <p>Status: <span id="status">idle</span></p>
+    <p>Connection path: <span id="path">-</span></p>
+
+    <audio id="localAudio" autoplay muted playsinline></audio>
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <pre id="log"></pre>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

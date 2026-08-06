@@ -1,0 +1,32 @@
+services:
+  coturn:
+    image: coturn/coturn:4.6.2-alpine
+    # host networking avoids having to publish the whole 49160-49200 UDP relay
+    # range individually through Docker's NAT — only works on Linux hosts.
+    network_mode: host
+    volumes:
+      - ./turn-server/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command:
+      - -c
+      - /etc/coturn/turnserver.conf
+      - --realm=${TURN_REALM:-voicecall.local}
+      - --static-auth-secret=${TURN_SECRET:-change-me-to-a-long-random-string}
+    restart: unless-stopped
+
+  signaling-server:
+    build: ./signaling-server
+    ports:
+      - "${PORT:-5800}:5800"
+    volumes:
+      - ./web-client:/app/web-client:ro
+    environment:
+      PORT: 5800
+      WEB_CLIENT_DIR: /app/web-client
+      TURN_HOST: ${TURN_HOST:-127.0.0.1}
+      TURN_PORT: ${TURN_PORT:-3478}
+      TURN_SECRET: ${TURN_SECRET:-change-me-to-a-long-random-string}
+      TURN_REALM: ${TURN_REALM:-voicecall.local}
+      CRED_TTL_SECONDS: ${CRED_TTL_SECONDS:-3600}
+    depends_on:
+      - coturn
+    restart: unless-stopped
