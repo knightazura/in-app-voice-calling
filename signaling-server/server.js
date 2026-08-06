@@ -33,13 +33,6 @@ function mintTurnCredentials(userId) {
   };
 }
 
-// Static directory, just enough to demo a "pick a contact" UI without real auth/user storage.
-const CONTACTS = [
-  { id: 'alice', name: 'Alice' },
-  { id: 'bob', name: 'Bob' },
-  { id: 'carol', name: 'Carol' },
-];
-
 const RING_TIMEOUT_MS = 30000;
 
 const app = express();
@@ -49,10 +42,6 @@ app.use(express.static(webClientDir));
 app.get('/turn-credentials', (req, res) => {
   const userId = req.query.user || `anon-${Date.now()}`;
   res.json(mintTurnCredentials(userId));
-});
-
-app.get('/contacts', (req, res) => {
-  res.json(CONTACTS);
 });
 
 const server = http.createServer(app);
@@ -74,6 +63,16 @@ function sendToUser(userId, payload) {
 
 function otherParty(call, userId) {
   return call.caller === userId ? call.callee : call.caller;
+}
+
+// Every user gets the current online list minus themselves, pushed on any
+// presence change — this is what lets the client "discover" others live
+// instead of relying on a hardcoded contact book.
+function broadcastPresence() {
+  const online = Array.from(users.keys());
+  for (const [userId, ws] of users) {
+    send(ws, { type: 'presence:update', users: online.filter((u) => u !== userId) });
+  }
 }
 
 function endCall(callId, notify) {
@@ -100,6 +99,7 @@ wss.on('connection', (ws, req) => {
   ws.user = user;
 
   console.log(`[online] user=${user}`);
+  broadcastPresence();
 
   ws.on('message', (raw) => {
     let msg;
@@ -178,13 +178,17 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
-    if (users.get(user) === ws) users.delete(user);
+    // If this connection was already replaced by a newer one for the same
+    // name, don't remove the newer registration or re-broadcast for it.
+    if (users.get(user) !== ws) return;
+    users.delete(user);
     for (const [callId, call] of calls) {
       if (call.caller === user || call.callee === user) {
         endCall(callId, { to: otherParty(call, user), payload: { type: 'call:ended', callId } });
       }
     }
     console.log(`[offline] user=${user}`);
+    broadcastPresence();
   });
 });
 

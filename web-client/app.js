@@ -68,7 +68,6 @@ function connectPresence(user) {
     onlineStatusEl.textContent = 'online';
     onlineBtn.disabled = true;
     userInput.disabled = true;
-    loadContacts();
     showOnly(contactsSection);
   };
   ws.onclose = () => {
@@ -79,24 +78,30 @@ function connectPresence(user) {
   ws.onmessage = (event) => handleMessage(JSON.parse(event.data));
 }
 
-async function loadContacts() {
-  const res = await fetch('/contacts');
-  const contacts = await res.json();
+// Renders whoever else is currently online, as pushed by the server's
+// presence:update broadcast — no predefined contact list.
+function renderOnlineUsers(others) {
   contactsEl.innerHTML = '';
-  for (const c of contacts.filter((c) => c.id !== myUser)) {
+  if (others.length === 0) {
     const li = document.createElement('li');
-    li.textContent = `${c.name} `;
+    li.textContent = 'No one else is online yet...';
+    contactsEl.appendChild(li);
+    return;
+  }
+  for (const userId of others) {
+    const li = document.createElement('li');
+    li.textContent = `${userId} `;
     const callButton = document.createElement('button');
     callButton.textContent = 'Call';
-    callButton.onclick = () => startCall(c.id, c.name);
+    callButton.onclick = () => startCall(userId);
     li.appendChild(callButton);
     contactsEl.appendChild(li);
   }
 }
 
-function startCall(to, name) {
+function startCall(to) {
   wsSend({ type: 'call:invite', to });
-  outgoingToEl.textContent = name;
+  outgoingToEl.textContent = to;
   outgoingStatusEl.textContent = 'ringing...';
   showOnly(outgoingSection);
 }
@@ -174,12 +179,15 @@ function resetToContacts(message) {
   currentCallId = null;
   setStatus('idle');
   pathEl.textContent = '-';
-  loadContacts();
   showOnly(contactsSection);
 }
 
 async function handleMessage(msg) {
   switch (msg.type) {
+    case 'presence:update':
+      renderOnlineUsers(msg.users);
+      break;
+
     case 'call:ringing':
       currentCallId = msg.callId;
       break;

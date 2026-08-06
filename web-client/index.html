@@ -9,13 +9,13 @@
   <main>
     <h1>In-App Voice Call — PoC</h1>
     <p class="hint">
-      Open this page in two browser tabs (or two devices), go online with a <strong>different name</strong> in each
-      (e.g. alice / bob), then pick the other contact and click Call.
+      Open this page in two browser tabs (or two devices), set a <strong>different name</strong> in each and go
+      online — you'll automatically see each other under "Who's online", then click Call.
     </p>
 
     <section id="presence-section">
       <div class="row">
-        <label>Your name <input id="user" value="alice" /></label>
+        <label>Your name <input id="user" placeholder="e.g. your first name" /></label>
         <button id="onlineBtn">Go Online</button>
         <span>Status: <span id="onlineStatus">offline</span></span>
       </div>
@@ -25,7 +25,7 @@
     </section>
 
     <section id="contacts-section" style="display:none">
-      <h2>Contacts</h2>
+      <h2>Who's online</h2>
       <ul id="contacts"></ul>
     </section>
 
