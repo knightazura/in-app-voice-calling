@@ -1,0 +1,7 @@
+# Caddy config for the AWS/domain deployment. Caddy auto-provisions a
+# Let's Encrypt certificate for {$DOMAIN} and transparently proxies both
+# regular HTTP requests and WebSocket upgrades (no extra config needed for
+# the wss:// signaling connection).
+{$DOMAIN} {
+	reverse_proxy signaling-server:5800
+}

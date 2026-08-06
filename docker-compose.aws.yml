@@ -1,0 +1,24 @@
+services:
+  signaling-server:
+    # Caddy proxies to this over the internal Docker network now — stop
+    # exposing plain HTTP directly to the internet on the host port.
+    ports: []
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+    depends_on:
+      - signaling-server
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
