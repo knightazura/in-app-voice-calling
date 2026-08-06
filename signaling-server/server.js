@@ -33,6 +33,15 @@ function mintTurnCredentials(userId) {
   };
 }
 
+// Static directory, just enough to demo a "pick a contact" UI without real auth/user storage.
+const CONTACTS = [
+  { id: 'alice', name: 'Alice' },
+  { id: 'bob', name: 'Bob' },
+  { id: 'carol', name: 'Carol' },
+];
+
+const RING_TIMEOUT_MS = 30000;
+
 const app = express();
 const webClientDir = process.env.WEB_CLIENT_DIR || path.join(__dirname, '..', 'web-client');
 app.use(express.static(webClientDir));
@@ -42,51 +51,55 @@ app.get('/turn-credentials', (req, res) => {
   res.json(mintTurnCredentials(userId));
 });
 
+app.get('/contacts', (req, res) => {
+  res.json(CONTACTS);
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-// room -> Set<ws>, max 2 sockets per room for this 1:1 PoC
-const rooms = new Map();
+// userId -> ws, tracks who is currently online (like being logged into the app)
+const users = new Map();
+// callId -> { caller, callee, state, timeout }
+const calls = new Map();
 
 function send(ws, payload) {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(payload));
 }
 
+function sendToUser(userId, payload) {
+  const ws = users.get(userId);
+  if (ws) send(ws, payload);
+}
+
+function otherParty(call, userId) {
+  return call.caller === userId ? call.callee : call.caller;
+}
+
+function endCall(callId, notify) {
+  const call = calls.get(callId);
+  if (!call) return;
+  clearTimeout(call.timeout);
+  calls.delete(callId);
+  if (notify) sendToUser(notify.to, notify.payload);
+}
+
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const room = url.searchParams.get('room');
-  const user = url.searchParams.get('user') || 'anon';
+  const user = url.searchParams.get('user');
 
-  if (!room) {
-    ws.close(4000, 'room query param is required');
+  if (!user) {
+    ws.close(4000, 'user query param is required');
     return;
   }
 
-  if (!rooms.has(room)) rooms.set(room, new Set());
-  const peers = rooms.get(room);
-
-  if (peers.size >= 2) {
-    send(ws, { type: 'error', message: 'room is full (this PoC supports 1:1 calls only)' });
-    ws.close(4001, 'room full');
-    return;
-  }
-
-  const isFirst = peers.size === 0;
-  peers.add(ws);
-  ws.room = room;
+  // Only one connection per user at a time for this PoC.
+  const existing = users.get(user);
+  if (existing) existing.close(4002, 'replaced by new connection');
+  users.set(user, ws);
   ws.user = user;
 
-  console.log(`[join] room=${room} user=${user} role=${isFirst ? 'answerer' : 'offerer'}`);
-
-  // The peer who joins second already knows someone is waiting, so it takes on
-  // the "offerer" role and starts the SDP exchange. The first peer just waits.
-  send(ws, { type: 'joined', role: isFirst ? 'answerer' : 'offerer', room });
-
-  if (!isFirst) {
-    for (const peer of peers) {
-      if (peer !== ws) send(peer, { type: 'peer-joined', user });
-    }
-  }
+  console.log(`[online] user=${user}`);
 
   ws.on('message', (raw) => {
     let msg;
@@ -95,18 +108,83 @@ wss.on('connection', (ws, req) => {
     } catch {
       return;
     }
-    // Signaling server never inspects SDP/ICE content, it just relays it
-    // between the two participants in the room.
-    for (const peer of peers) {
-      if (peer !== ws) send(peer, msg);
+
+    switch (msg.type) {
+      // --- Call setup: this is the "ringing" handshake, before any SDP is exchanged ---
+      case 'call:invite': {
+        const to = msg.to;
+        if (to === user || !users.has(to)) {
+          send(ws, { type: 'call:unavailable', to });
+          return;
+        }
+        const callId = crypto.randomUUID();
+        const call = { caller: user, callee: to, state: 'ringing' };
+        call.timeout = setTimeout(() => {
+          sendToUser(call.caller, { type: 'call:missed', callId });
+          sendToUser(call.callee, { type: 'call:missed', callId });
+          calls.delete(callId);
+        }, RING_TIMEOUT_MS);
+        calls.set(callId, call);
+        send(ws, { type: 'call:ringing', callId, to });
+        sendToUser(to, { type: 'call:incoming', callId, from: user });
+        console.log(`[call:invite] ${user} -> ${to} callId=${callId}`);
+        break;
+      }
+
+      case 'call:accept': {
+        const call = calls.get(msg.callId);
+        if (!call || call.callee !== user) return;
+        clearTimeout(call.timeout);
+        call.state = 'active';
+        sendToUser(call.caller, { type: 'call:accepted', callId: msg.callId });
+        break;
+      }
+
+      case 'call:decline': {
+        const call = calls.get(msg.callId);
+        if (!call || call.callee !== user) return;
+        endCall(msg.callId, { to: call.caller, payload: { type: 'call:declined', callId: msg.callId } });
+        break;
+      }
+
+      case 'call:cancel': {
+        const call = calls.get(msg.callId);
+        if (!call || call.caller !== user) return;
+        endCall(msg.callId, { to: call.callee, payload: { type: 'call:cancelled', callId: msg.callId } });
+        break;
+      }
+
+      case 'call:hangup': {
+        const call = calls.get(msg.callId);
+        if (!call) return;
+        endCall(msg.callId, { to: otherParty(call, user), payload: { type: 'call:ended', callId: msg.callId } });
+        break;
+      }
+
+      // --- SDP/ICE relay: server never inspects the content, just routes it to
+      // the other participant in the call the message references ---
+      case 'offer':
+      case 'answer':
+      case 'candidate': {
+        const call = calls.get(msg.callId);
+        if (!call) return;
+        sendToUser(otherParty(call, user), msg);
+        break;
+      }
+
+      default:
+        break;
     }
   });
 
   ws.on('close', () => {
-    peers.delete(ws);
-    for (const peer of peers) send(peer, { type: 'peer-left', user });
-    if (peers.size === 0) rooms.delete(room);
-    console.log(`[leave] room=${room} user=${user}`);
+    if (users.get(user) === ws) users.delete(user);
+    for (const [callId, call] of calls) {
+      if (call.caller === user || call.callee === user) {
+        endCall(callId, { to: otherParty(call, user), payload: { type: 'call:ended', callId } });
+      }
+    }
+    console.log(`[offline] user=${user}`);
   });
 });
 

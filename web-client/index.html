@@ -9,29 +9,44 @@
   <main>
     <h1>In-App Voice Call — PoC</h1>
     <p class="hint">
-      Open this page in two browser tabs (or two devices), use the <strong>same room ID</strong>,
-      and click Join in both. Voice should connect automatically.
+      Open this page in two browser tabs (or two devices), go online with a <strong>different name</strong> in each
+      (e.g. alice / bob), then pick the other contact and click Call.
     </p>
 
-    <div class="row">
-      <label>Room ID <input id="room" value="test-room" /></label>
-      <label>Your name <input id="user" value="userA" /></label>
-    </div>
+    <section id="presence-section">
+      <div class="row">
+        <label>Your name <input id="user" value="alice" /></label>
+        <button id="onlineBtn">Go Online</button>
+        <span>Status: <span id="onlineStatus">offline</span></span>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="forceRelay" /> Force TURN relay (ignore direct/STUN paths)</label>
+      </div>
+    </section>
 
-    <div class="row">
-      <label><input type="checkbox" id="forceRelay" /> Force TURN relay (ignore direct/STUN paths)</label>
-    </div>
+    <section id="contacts-section" style="display:none">
+      <h2>Contacts</h2>
+      <ul id="contacts"></ul>
+    </section>
 
-    <div class="row">
-      <button id="joinBtn">Join Call</button>
-      <button id="leaveBtn" disabled>Leave</button>
-    </div>
+    <section id="incoming-section" class="banner" style="display:none">
+      <p><strong id="incomingFrom"></strong> is calling you...</p>
+      <button id="acceptBtn">Accept</button>
+      <button id="declineBtn">Decline</button>
+    </section>
 
-    <p>Status: <span id="status">idle</span></p>
-    <p>Connection path: <span id="path">-</span></p>
+    <section id="outgoing-section" class="banner" style="display:none">
+      <p>Calling <strong id="outgoingTo"></strong>... <span id="outgoingStatus">ringing</span></p>
+      <button id="cancelBtn">Cancel</button>
+    </section>
 
-    <audio id="localAudio" autoplay muted playsinline></audio>
-    <audio id="remoteAudio" autoplay playsinline></audio>
+    <section id="call-section" style="display:none">
+      <p>Status: <span id="status">idle</span></p>
+      <p>Connection path: <span id="path">-</span></p>
+      <audio id="localAudio" autoplay muted playsinline></audio>
+      <audio id="remoteAudio" autoplay playsinline></audio>
+      <button id="hangupBtn">Hang Up</button>
+    </section>
 
     <pre id="log"></pre>
   </main>

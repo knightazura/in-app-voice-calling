@@ -44,3 +44,24 @@ button:disabled {
 #path {
   font-weight: bold;
 }
+
+#contacts {
+  list-style: none;
+  padding: 0;
+}
+
+#contacts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.banner {
+  background: #fff8e1;
+  border: 1px solid #f0d878;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
