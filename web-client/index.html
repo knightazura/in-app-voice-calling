@@ -229,9 +229,11 @@
         <label class="field">
           Connection mode
           <select id="iceMode">
-            <option value="auto">Automatic (recommended)</option>
+            <option value="no-turn" selected>
+              Direct only (no relay) — default
+            </option>
+            <option value="auto">Automatic (uses relay if needed)</option>
             <option value="relay">Always use relay server</option>
-            <option value="no-turn">Direct only (no relay)</option>
           </select>
         </label>
 
