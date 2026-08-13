@@ -1,62 +1,256 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>In-App Voice Call — PoC</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <main>
-    <h1>In-App Voice Call — PoC</h1>
-    <p class="hint">
-      Open this page in two browser tabs (or two devices), set a <strong>different name</strong> in each and go
-      online — you'll automatically see each other under "Who's online", then click Call.
-    </p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Voice Call</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Sign in -->
+      <section id="screen-signin" class="screen active">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="36"
+              height="36"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"
+              />
+            </svg>
+          </div>
+          <h1>Voice Call</h1>
+          <p class="subtitle">Enter your name to go online and start calling</p>
+        </div>
+        <div class="signin-form">
+          <input
+            id="user"
+            placeholder="Your name"
+            autocomplete="off"
+            enterkeyhint="go"
+          />
+          <button id="onlineBtn" class="btn-primary">Go Online</button>
+        </div>
+        <button id="openSettingsSignin" class="link-btn">
+          Advanced settings
+        </button>
+      </section>
 
-    <section id="presence-section">
-      <div class="row">
-        <label>Your name <input id="user" placeholder="e.g. your first name" /></label>
-        <button id="onlineBtn">Go Online</button>
-        <span>Status: <span id="onlineStatus">offline</span></span>
-      </div>
-      <div class="row">
-        <label>ICE mode
+      <!-- Contacts -->
+      <section id="screen-contacts" class="screen">
+        <header class="topbar">
+          <div class="me">
+            <div class="avatar" id="myAvatar"></div>
+            <div class="me-info">
+              <div class="me-name" id="myName"></div>
+              <div class="me-status">
+                <span class="status-dot"></span>Online
+              </div>
+            </div>
+          </div>
+          <button
+            id="openSettingsContacts"
+            class="icon-btn"
+            aria-label="Settings"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+              />
+            </svg>
+          </button>
+        </header>
+        <h2 class="section-title">Contacts</h2>
+        <ul id="contacts" class="contacts-list"></ul>
+      </section>
+
+      <!-- Incoming call -->
+      <section id="screen-incoming" class="screen call-screen">
+        <div class="call-avatar-wrap">
+          <div class="avatar avatar-lg pulsing" id="incomingAvatar"></div>
+        </div>
+        <div class="call-name" id="incomingFrom"></div>
+        <div class="call-subtitle">Incoming call…</div>
+        <div class="call-actions">
+          <button id="declineBtn" class="call-btn decline" aria-label="Decline">
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <button id="acceptBtn" class="call-btn accept" aria-label="Accept">
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"
+              />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Outgoing call -->
+      <section id="screen-outgoing" class="screen call-screen">
+        <div class="call-avatar-wrap">
+          <div class="avatar avatar-lg pulsing" id="outgoingAvatar"></div>
+        </div>
+        <div class="call-name" id="outgoingTo"></div>
+        <div class="call-subtitle" id="outgoingStatus">Ringing…</div>
+        <div class="call-actions single">
+          <button id="cancelBtn" class="call-btn decline" aria-label="Cancel">
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- In call -->
+      <section id="screen-call" class="screen call-screen">
+        <div class="call-avatar-wrap">
+          <div class="avatar avatar-lg" id="callAvatar"></div>
+        </div>
+        <div class="call-name" id="callWithName"></div>
+        <div class="call-subtitle" id="callTimer">Connecting…</div>
+        <div class="connection-badge hidden" id="connectionBadge"></div>
+        <div class="call-actions">
+          <button id="muteBtn" class="call-btn secondary" aria-label="Mute">
+            <span class="icon-on"
+              ><svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" /></svg
+            ></span>
+            <span class="icon-off"
+              ><svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="1" y1="1" x2="23" y2="23" />
+                <path
+                  d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"
+                />
+                <path
+                  d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"
+                />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" /></svg
+            ></span>
+          </button>
+          <button id="hangupBtn" class="call-btn decline" aria-label="Hang up">
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <audio id="localAudio" autoplay muted playsinline></audio>
+        <audio id="remoteAudio" autoplay playsinline></audio>
+      </section>
+    </div>
+
+    <!-- Settings -->
+    <div id="settingsModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Settings</h3>
+
+        <label class="field">
+          Connection mode
           <select id="iceMode">
-            <option value="auto">Auto (default — may fall back to TURN)</option>
-            <option value="relay">Force TURN relay only</option>
-            <option value="no-turn">Direct/STUN only — no TURN fallback (network-block test)</option>
+            <option value="auto">Automatic (recommended)</option>
+            <option value="relay">Always use relay server</option>
+            <option value="no-turn">Direct only (no relay)</option>
           </select>
         </label>
+
+        <label class="switch-row">
+          <span>Show technical log</span>
+          <span class="switch">
+            <input type="checkbox" id="logToggle" />
+            <span class="slider"></span>
+          </span>
+        </label>
+
+        <div id="logWrap" class="log-wrap hidden">
+          <pre id="log"></pre>
+        </div>
+
+        <button id="closeSettings" class="btn-secondary">Close</button>
       </div>
-    </section>
+    </div>
 
-    <section id="contacts-section" style="display:none">
-      <h2>Who's online</h2>
-      <ul id="contacts"></ul>
-    </section>
-
-    <section id="incoming-section" class="banner" style="display:none">
-      <p><strong id="incomingFrom"></strong> is calling you...</p>
-      <button id="acceptBtn">Accept</button>
-      <button id="declineBtn">Decline</button>
-    </section>
-
-    <section id="outgoing-section" class="banner" style="display:none">
-      <p>Calling <strong id="outgoingTo"></strong>... <span id="outgoingStatus">ringing</span></p>
-      <button id="cancelBtn">Cancel</button>
-    </section>
-
-    <section id="call-section" style="display:none">
-      <p>Status: <span id="status">idle</span></p>
-      <p>Connection path: <span id="path">-</span></p>
-      <audio id="localAudio" autoplay muted playsinline></audio>
-      <audio id="remoteAudio" autoplay playsinline></audio>
-      <button id="hangupBtn">Hang Up</button>
-    </section>
-
-    <pre id="log"></pre>
-  </main>
-
-  <script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>
