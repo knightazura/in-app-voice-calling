@@ -1,7 +1,7 @@
 const userInput = document.getElementById('user');
 const onlineBtn = document.getElementById('onlineBtn');
 const onlineStatusEl = document.getElementById('onlineStatus');
-const forceRelayInput = document.getElementById('forceRelay');
+const iceModeSelect = document.getElementById('iceMode');
 
 const contactsSection = document.getElementById('contacts-section');
 const contactsEl = document.getElementById('contacts');
@@ -116,11 +116,20 @@ function prepareMedia() {
       const res = await fetch(`/turn-credentials?user=${encodeURIComponent(myUser)}`);
       const creds = await res.json();
       log('[turn] credentials issued, ttl=', creds.ttl, 's');
-      const iceServers = [{ urls: creds.uris, username: creds.username, credential: creds.credential }];
+
+      const iceMode = iceModeSelect.value;
+      log('[ice] mode =', iceMode);
+
+      // "no-turn" strips the turn: URI out of iceServers entirely, so ICE never
+      // gathers relay candidates and never has a TURN path to silently fall back
+      // to — a stalled/failed connection then means direct/STUN really is blocked.
+      const iceServers = iceMode === 'no-turn'
+        ? [{ urls: creds.uris.filter((u) => u.startsWith('stun:')) }]
+        : [{ urls: creds.uris, username: creds.username, credential: creds.credential }];
 
       pc = new RTCPeerConnection({
         iceServers,
-        iceTransportPolicy: forceRelayInput.checked ? 'relay' : 'all',
+        iceTransportPolicy: iceMode === 'relay' ? 'relay' : 'all',
       });
 
       pc.onicecandidate = (event) => {

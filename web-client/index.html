@@ -20,7 +20,13 @@
         <span>Status: <span id="onlineStatus">offline</span></span>
       </div>
       <div class="row">
-        <label><input type="checkbox" id="forceRelay" /> Force TURN relay (ignore direct/STUN paths)</label>
+        <label>ICE mode
+          <select id="iceMode">
+            <option value="auto">Auto (default — may fall back to TURN)</option>
+            <option value="relay">Force TURN relay only</option>
+            <option value="no-turn">Direct/STUN only — no TURN fallback (network-block test)</option>
+          </select>
+        </label>
       </div>
     </section>
 
